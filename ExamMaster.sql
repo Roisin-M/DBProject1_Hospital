@@ -2,6 +2,7 @@ CREATE PROC ExamMaster
 --declare all extrenal variables here
 @EFirstName VARCHAR(35), @ELastName VARCHAR(35), @EDOB DATE, @ECovidStatus BIT, @EWardID INT
 --table type CareTeamIDS
+, @ECareTeamIDS PCareTeams READONLY
 AS
 --declare all internal variables
 
