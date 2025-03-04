@@ -1,4 +1,4 @@
-CREATE PROC InsertPatient_ToCareTeam
+CREATE PROC InsertToCareTeam
 @EpPatientID INT,
 @EcDateFormed DATE,
 @EcDateFinished DATE,
