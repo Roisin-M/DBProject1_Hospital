@@ -1,15 +1,15 @@
 CREATE PROC ExamMaster
---declare all extrenal variables here
+--***DECLARE ALL EXTERNAL DATA***
 @EFirstName VARCHAR(35), @ELastName VARCHAR(35), @EDOB DATE, @ECovidStatus BIT, @EWardID INT
---table type CareTeamIDS
+--TABLE TYPE CARE TEAMIDS
 , @ECareTeamIDS PCareTeams READONLY
 AS
---declare all internal variables
+--***DECLARE ALL INTERNAL VARIABLES***
 DECLARE 
 @INumOfPatientsInTheWard TINYINT, @IPatientsAge INT, 
 @ITodaysDate DATE = GETDATE(), @IDayOfWeek INT --sunday =1, saturday =7
 , @IWardCapacity TINYINT, @IWardStatus CHAR(10), @IWardSpec CHAR(10)
---READ DATA FROM THE TABLES/ SYSTEM INTO THE INTERNAL VARIABLES
+--***READ DATA FROM THE TABLES/ SYSTEM INTO THE INTERNAL VARIABLES***
 --READ DAY OF THE WEEK
 SELECT @IDayOfWeek = DATENAME(WEEKDAY,@ITodaysDate)
 -- READ NUMBER OF PATIENTS IN THE WARD
@@ -26,8 +26,7 @@ SELECT @IPatientsAge = DATEDIFF(YEAR,@EDOB,@ITodaysDate)
 SELECT @IWardSpec = WardSpeciality
 FROM dbo.WarDTBL
 WHERE @EWardID = WardID
-
---PERFORM ALL BUSINESS LOGIC OPERATIONS HERE
+--***PERFORM ALL BUSINESS LOGIC OPERATIONS HERE***
 --1. WARD CAPACITY RULES
 -- DEFAULT VALUE FOR WARD STATUS
 SET @IWardStatus = 'Available'
@@ -67,7 +66,7 @@ ELSE IF (@IPatientsAge >=15 AND @IPatientsAge <18 AND (@IWardSpec NOT LIKE '%Pae
     ;THROW 50005, 'Patient is greater than 14 and less than 18 but not assigned to "Paediatric" or "Paeds"',1
     END
 
---execute all output sub procs here
+--***EXECUTE SUBSPROCS***
 --wrap each execute in a TRY/CATCH block
 
---all works send out a success message
+--***ALL WORKS, SEND OUT A SUCCESS MESSAGE***
