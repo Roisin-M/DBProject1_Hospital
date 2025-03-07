@@ -1,4 +1,4 @@
-CREATE PROC ExamMaster
+ALTER PROC ExamMaster
 --***DECLARE ALL EXTERNAL DATA***
 @EFirstName VARCHAR(35), @ELastName VARCHAR(35), @EDOB DATE, @EWardID INT, @ECareTeamID INT
 , @ECovidStatus CHAR(8) --NULL IS UNKNOWN
@@ -7,8 +7,9 @@ CREATE PROC ExamMaster
 AS
 --***DECLARE ALL INTERNAL VARIABLES***
 DECLARE 
+@INewPatientID INT
 --WARD INTERNAL VARIABLES
-@INumOfPatientsInTheWard TINYINT, @IPatientsAge TINYINT
+,@INumOfPatientsInTheWard TINYINT, @IPatientsAge TINYINT
 ,@ITodaysDate DATE = GETDATE(), @IDayOfWeek INT --sunday =1, saturday =7
 ,@IWardCapacity TINYINT, @IWardStatus CHAR(10), @IWardSpec CHAR(10)
 --CARE TEAM INTERNAL VARIABLES
@@ -225,6 +226,13 @@ BEGIN
 ;THROW 50008, 'Care Team Does Not Have At Least One Active Nurse With The Ward Speciality', 1;
 END
 --***EXECUTE SUBSPROCS***
---wrap each execute in a TRY/CATCH block
+--EXECUTE INSERT PATIENT SUBSPROC
+BEGIN TRY
+EXEC test2000.InsertPatient @EFirstName, @ELastName, @EWardID, @ECovidStatus, @OpatientNum = @INewPatientID OUTPUT
+END TRY
+BEGIN CATCH
+;THROW
+END CATCH
+--EXECUTE INSERT PATIENT INTO CARE TEAM SUBSPROC
 
 --***ALL WORKS, SEND OUT A SUCCESS MESSAGE***
