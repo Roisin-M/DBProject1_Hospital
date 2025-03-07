@@ -1,7 +1,7 @@
 CREATE PROC ExamMaster
 --***DECLARE ALL EXTERNAL DATA***
 @EFirstName VARCHAR(35), @ELastName VARCHAR(35), @EDOB DATE, @EWardID INT, @ECareTeamID INT
-, @ECovidStatus BIT -- 0 = negative, 1 = positive, null = unknown
+, @ECovidStatus CHAR(8) --NULL IS UNKNOWN
 --TABLE TYPE CARE TEAMIDS
   --@ECareTeamIDS PCareTeams READONLY
 AS
@@ -167,7 +167,7 @@ END
 --3. CARE-TEAM RULES
  SET @ITheSelectedNurseID = NULL
 --CHECK IF COVID STATUS IS POSITIVE /UNKNOWN
-IF(@ECovidStatus = 1 OR @ECovidStatus IS NULL )
+IF(@ECovidStatus LIKE 'positive' OR @ECovidStatus IS NULL )
 BEGIN
     --CHECK IF ALL DOCTORS ARE VACCINATED IN THE CARE TEAM
     IF(@INumberOfVaccinatedDoctors < @INumberOfDoctorsInCareTeam)
@@ -200,12 +200,12 @@ BEGIN
     SET @ITheSelectedNurseID = @IRandomSelectedNurseID
     END
     -- ASSIGN A VACCINATED NURSE TO CARE TEAM
-    ELSE IF ((@ECovidStatus = 1 OR @ECovidStatus IS NULL) AND @INumberOfAvailableVaccinatedNurses > 0)
+    ELSE IF ((@ECovidStatus LIKE 'positive' OR @ECovidStatus IS NULL) AND @INumberOfAvailableVaccinatedNurses > 0)
     BEGIN
     SET @ITheSelectedNurseID = @IRandomSelectedVaccinatedNurseID
     END
     -- ASSIGN AN UNVACCINATED NURSE TO CARE TEAM
-    ELSE IF (@ECovidStatus = 0) AND @INumberOfAvailableUnvaccinatedNurses > 0
+    ELSE IF (@ECovidStatus LIKE 'negative') AND @INumberOfAvailableUnvaccinatedNurses > 0
     BEGIN
     SET @ITheSelectedNurseID = @IRandomSelectedUnvaccinatedNurseID
     END
