@@ -19,7 +19,7 @@ DECLARE
 --NURSE INTERNAL VARIABLES
 ,@IRandomSelectedNurseID INT, @IRandomSelectedVaccinatedNurseID INT, @IRandomSelectedUnvaccinatedNurseID INT
 ,@INumberOfAvailableWardNurses TINYINT, @INumberOfAvailableVaccinatedNurses TINYINT, @INumberOfAvailableUnvaccinatedNurses TINYINT
-,@ITheSelectedNurseID INT;
+,@ITheSelectedNurseID INT, @ISelectedNurseSpeciality CHAR(10);
 --CREATE TEMPORARY TABLES
 CREATE TABLE #ListOfWardNurses (NurseID INT);
 CREATE TABLE #ListOfVaccinatedNurses (NurseID INT);
@@ -151,14 +151,14 @@ BEGIN
 END
 --2. WARD AGE RULES
 --CHECK MATCHES PAEDS 13
-IF (ISNULL(@IPatientsAge,0) <=13 AND (@IWardSpec NOT LIKE 'Paediatric13' OR @IWardSpec NOT LIKE 'Paeds 13'))
+IF (ISNULL(@IPatientsAge,0) <=13 AND (@IWardSpec NOT LIKE 'Paeds13')) -- WARD SPECIALITY IS MAX 10 CHARS SO NOT TESTING PAEDIATRIC13
 BEGIN
-;THROW 50003, 'Patient is less than 13 but not assigned to "Paediatric13" or "Paeds 13"',1
+;THROW 50003, 'Patient is less than 13 but not assigned to "Paediatric13" or "Paeds13"',1
 END
 --CHECK MATCHES PAEDS15
-ELSE IF (@IPatientsAge = 14 AND (@IWardSpec NOT LIKE 'Paediatric15' OR @IWardSpec NOT LIKE 'Paeds 15'))
+ELSE IF (@IPatientsAge = 14 AND (@IWardSpec NOT LIKE 'Paeds15')) -- WARD SPECIALITY IS MAX 10 CHARS SO NOT TESTING PAEDIATRIC15
 BEGIN
-;THROW 50004, 'Patient is greater than 13and less than 15 but not assigned to "Paediatric15" or "Paeds 15"',1
+;THROW 50004, 'Patient is greater than 13and less than 15 but not assigned to "Paediatric15" or "Paeds15"',1
 END
 --CHECK MATCHES PAEDS
 ELSE IF (@IPatientsAge >=15 AND ISNULL(@IPatientsAge,0) <18 AND (@IWardSpec NOT LIKE 'Paediatric' OR @IWardSpec NOT LIKE 'Paeds'))
@@ -168,7 +168,7 @@ END
 --3. CARE-TEAM RULES
  SET @ITheSelectedNurseID = NULL
 --CHECK IF COVID STATUS IS POSITIVE /UNKNOWN
-IF(@ECovidStatus LIKE 'positive' OR @ECovidStatus IS NULL )
+IF(@ECovidStatus LIKE 'Positive' OR @ECovidStatus IS NULL )
 BEGIN
     --CHECK IF ALL DOCTORS ARE VACCINATED IN THE CARE TEAM
     IF(@INumberOfVaccinatedDoctors < @INumberOfDoctorsInCareTeam)
@@ -201,12 +201,12 @@ BEGIN
     SET @ITheSelectedNurseID = @IRandomSelectedNurseID
     END
     -- ASSIGN A VACCINATED NURSE TO CARE TEAM
-    ELSE IF ((@ECovidStatus LIKE 'positive' OR @ECovidStatus IS NULL) AND @INumberOfAvailableVaccinatedNurses > 0)
+    ELSE IF ((@ECovidStatus LIKE 'Positive' OR @ECovidStatus IS NULL) AND @INumberOfAvailableVaccinatedNurses > 0)
     BEGIN
     SET @ITheSelectedNurseID = @IRandomSelectedVaccinatedNurseID
     END
     -- ASSIGN AN UNVACCINATED NURSE TO CARE TEAM
-    ELSE IF (@ECovidStatus LIKE 'negative') AND @INumberOfAvailableUnvaccinatedNurses > 0
+    ELSE IF (@ECovidStatus LIKE 'Negative') AND @INumberOfAvailableUnvaccinatedNurses > 0
     BEGIN
     SET @ITheSelectedNurseID = @IRandomSelectedUnvaccinatedNurseID
     END
@@ -215,13 +215,17 @@ BEGIN
     ;THROW 50011, 'No Available Nurse To Add To The Care Team', 1
     END
 END
+-- READ THE SPECIALITY OF THE NEW SELECTED NURSE
+SELECT @ISelectedNurseSpeciality = NurseSpeciality
+FROM DBO.NurseTBL
+WHERE NurseID = @ITheSelectedNurseID
 -- CHECK THAT AT LEAST 1 DOCTOR HAS SPECIALITY OF WARD
 IF(@INumberOfDoctorSpecialityMatches = 0)
 BEGIN
 ;THROW 50007, 'Care Team Does Not Have At Least One Active Doctor With The Ward Speciality', 1;
 END
 -- CHECK THAT AT LEAST 1 NURSE HAS SPECIALITY OF WARD
-ELSE IF (@INumberOfNursesSpecialityMatches = 0)
+ELSE IF (@INumberOfNursesSpecialityMatches = 0 AND (@ISelectedNurseSpeciality IS NOT NULL AND LEFT(@IWardSpec, 3) != RIGHT(@ISelectedNurseSpeciality, 3)))
 BEGIN
 ;THROW 50008, 'Care Team Does Not Have At Least One Active Nurse With The Ward Speciality', 1;
 END
@@ -231,8 +235,11 @@ BEGIN TRY
 EXEC test2000.InsertPatient @EFirstName, @ELastName, @EWardID, @ECovidStatus, @OpatientNum = @INewPatientID OUTPUT
 END TRY
 BEGIN CATCH
-;THROW
+;THROW 50012, 'Patient insert failed.', 1;
 END CATCH
 --EXECUTE INSERT PATIENT INTO CARE TEAM SUBSPROC
 
+
 --***ALL WORKS, SEND OUT A SUCCESS MESSAGE***
+--PATIENT INSERTED SUCCESS:
+ PRINT 'SUCCESS: Patient ' + @EFirstName +' '+ @ELastName + ' inserted successfully with PatientID: ' + CAST(@INewPatientID AS VARCHAR);
