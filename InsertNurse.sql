@@ -1,18 +1,14 @@
-CREATE PROC InsertNurse
-@EncDateJoined SMALLDATETIME,
-@EncCurrentMember BIT,
-@OCareTeamID INT OUTPUT,
-@OMemberID INT OUTPUT
+ALTER PROC InsertNurse
+@ENurseID INT,
+@EpCareTeamID INT
 AS
---insert values into Nurse Care Team Members
+--INSERT VALUES INTO NURSECARETEAM TBL
 BEGIN TRY
 INSERT into dbo.NurseCareTeamMembersTBL
-(DateJoineD, CurrentMember)
+(MemberID, CareTeamID)
 VALUES
-(@EncDateJoined, @EncCurrentMember)
--- output the newly generated careteam ID and member ID
-SELECT @OCareTeamID = SCOPE_IDENTITY(), @OMemberID = SCOPE_IDENTITY()
+(@ENurseID, @EpCareTeamID)
 END TRY
 BEGIN CATCH
-;THROW
+;THROW 50016, 'Failed to Assign Nurse to Care Team', 1;
 END CATCH

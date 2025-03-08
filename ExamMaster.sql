@@ -10,12 +10,13 @@ DECLARE
 @INewPatientID INT
 --WARD INTERNAL VARIABLES
 ,@INumOfPatientsInTheWard TINYINT, @IPatientsAge TINYINT
-,@ITodaysDate DATE = GETDATE(), @IDayOfWeek INT --sunday =1, saturday =7
+,@ITodaysDate DATE = GETDATE(), @IDayOfWeek NVARCHAR --sunday =1, saturday =7
 ,@IWardCapacity TINYINT, @IWardStatus CHAR(10), @IWardSpec CHAR(10)
 --CARE TEAM INTERNAL VARIABLES
 ,@INumberOfDoctorsInCareTeam TINYINT, @INumberOfNursesInCareTeam TINYINT
 ,@INumberOfDoctorSpecialityMatches TINYINT, @INumberOfNursesSpecialityMatches TINYINT
 ,@INumberOfVaccinatedDoctors TINYINT, @INumberOfVaccinatedNurses TINYINT
+,@IExistingCareTeamPatientID INT
 --NURSE INTERNAL VARIABLES
 ,@IRandomSelectedNurseID INT, @IRandomSelectedVaccinatedNurseID INT, @IRandomSelectedUnvaccinatedNurseID INT
 ,@INumberOfAvailableWardNurses TINYINT, @INumberOfAvailableVaccinatedNurses TINYINT, @INumberOfAvailableUnvaccinatedNurses TINYINT
@@ -126,12 +127,16 @@ ORDER BY NEWID()
 SELECT TOP 1 @IRandomSelectedUnvaccinatedNurseID = NurseID
 FROM #ListOfUnvaccinatedNurses
 ORDER BY NEWID()
+--IS THERE A PATIENT ASSIGNED TO THSI CARETEAM
+SELECT @IExistingCareTeamPatientID =PatientID
+FROM DBO.CareTeamTBL
+WHERE @ECareTeamID = CareTeamID
 --***PERFORM ALL BUSINESS LOGIC OPERATIONS HERE***
 --1. WARD CAPACITY RULES
 -- DEFAULT VALUE FOR WARD STATUS
 SET @IWardStatus = 'Available'
 --IS IT A WEEKDAY
-IF (@IDayOfWeek = 1 OR @IDayOfWeek = 7)
+IF (@IDayOfWeek LIKE 'Saturday' OR @IDayOfWeek LIKE 'Sunday')
 BEGIN
     -- IS THERE A WARD CAPACITY BREACH
     IF (@INumOfPatientsInTheWard >= ((@IWardCapacity * 1.2)-1))
@@ -238,8 +243,20 @@ BEGIN CATCH
 ;THROW 50012, 'Patient insert failed.', 1;
 END CATCH
 --EXECUTE INSERT PATIENT INTO CARE TEAM SUBSPROC
-
+BEGIN TRY
+EXEC test2000.InsertPatient_ToCareTeam @INewPatientID, @ECareTeamID, @IExistingCareTeamPatientID;
+END TRY
+BEGIN CATCH
+;THROW 50015, 'Failed to assign patient to care team', 1;
+END CATCH
+-- EXECUTE INSERT NURSE INTO CARE TEAM SUBSPROC
+BEGIN TRY
+EXEC test2000.InsertNurse @ITheSelectedNurseID, @ECareTeamID;
+END TRY
+BEGIN CATCH
+;THROW 50017, 'Failed to assign nurse to care team', 1;
+END CATCH
 
 --***ALL WORKS, SEND OUT A SUCCESS MESSAGE***
---PATIENT INSERTED SUCCESS:
- PRINT 'SUCCESS: Patient ' + @EFirstName +' '+ @ELastName + ' inserted successfully with PatientID: ' + CAST(@INewPatientID AS VARCHAR);
+PRINT 'SUCCESS: Patient ' + @EFirstName +' '+ @ELastName + ' inserted successfully with PatientID: ' + CAST(@INewPatientID AS VARCHAR);
+PRINT 'SUCCESS: Patient ' + @EFirstName +' '+ @ELastName + ' successfully assigned a care team with CareteamID: ' + CAST(@ECareTeamID AS VARCHAR);

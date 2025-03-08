@@ -1,4 +1,4 @@
-CREATE PROC InsertPatient
+ALTER PROC InsertPatient
 @EpFirstName VARCHAR(35),
 @EpLastName VARCHAR(35),
 @EpWardID INT,
