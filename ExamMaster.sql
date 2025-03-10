@@ -144,7 +144,7 @@ SET @IWardStatus = 'Available'
 IF (@IDayOfWeek LIKE 'Saturday' OR @IDayOfWeek LIKE 'Sunday')
 BEGIN
     -- IS THERE A WARD CAPACITY BREACH
-    IF (@INumOfPatientsInTheWard >= ((@IWardCapacity * 1.2)-1))
+    IF (@INumOfPatientsInTheWard > ((@IWardCapacity * 1.2)-1))
     BEGIN
     SET @IWardStatus = 'Overflowing'
     ;THROW 50001, 'The Ward Capacity Is Overflowing', 1
@@ -153,7 +153,7 @@ END
 ELSE 
 BEGIN
     -- IS THERE A WARD CAPACITY BREACH
-    IF @INumOfPatientsInTheWard >= (@IWardCapacity - 1)
+    IF @INumOfPatientsInTheWard > (@IWardCapacity - 1)
     BEGIN
     SET @IWardStatus = 'Full'
     ;THROW 50002, 'The Ward Capacity Is Full', 1
