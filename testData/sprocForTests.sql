@@ -6,8 +6,8 @@ BEGIN
     EXEC ExamMaster 
         @EFirstName = 'Valid', 
         @ELastName = 'Test',
-        @EDOB = '2015-05-15', 
-        @EWardID = 8, 
+        @EDOB = '2011-05-15', 
+        @EWardID = 9, 
         @ECareTeamID = 2, 
         @ECovidStatus = 'Negative';
 
